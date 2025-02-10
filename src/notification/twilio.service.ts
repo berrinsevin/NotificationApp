@@ -51,14 +51,11 @@ export class TwilioService {
 
   private async sendEmail(clientDto: ClientDto): Promise<any> {
     const from = process.env.SENDGRID_FROM_EMAIL;
+    console.log(clientDto);
 
     if (!from) {
       throw new Error('SendGrid sender email (SENDGRID_FROM_EMAIL) is not configured');
     }
-
-    // if (clientDto.mailAddress === null) {
-    //   throw new Error('SendGrid sender email (SENDGRID_FROM_EMAIL) is not configured');
-    // }
 
     const validAttachments = clientDto.attachments?.length ? clientDto.attachments.map((attachment: AttachmentDto) => {
       if (!isValidMimeType(attachment.mimeType)) {
@@ -82,7 +79,7 @@ export class TwilioService {
         text: clientDto.message,
         attachments: validAttachments,
       });
-
+      console.log(response);
       return response;
 
     } catch (error) {

@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { NotificationController } from './notification.controller';
-import { NotificationService } from './notification.service';
 import { TwilioService } from './twilio.service';
-import { Notification, NotificationSchema } from './schemas/notification.schema';
+import { MongooseModule } from '@nestjs/mongoose';
 import { LoggerService } from 'src/logger/logger.service';
-import { OtpService } from 'src/redis/otp.service';
-import { RedisService } from 'src/redis/redis.service';
+import { NotificationService } from './notification.service';
+import { NotificationController } from './notification.controller';
+import { Notification, NotificationSchema } from './schemas/notification.schema';
+
 import { BullModule } from '@nestjs/bull';
 
 @Module({
@@ -17,6 +16,6 @@ import { BullModule } from '@nestjs/bull';
     }),
   ],
   controllers: [NotificationController],
-  providers: [NotificationService, TwilioService, LoggerService, OtpService, RedisService],
+  providers: [NotificationService, TwilioService, LoggerService],
 })
 export class NotificationModule {}

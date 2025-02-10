@@ -15,7 +15,7 @@ export class ClientDto {
   @IsString()
   @ValidateIf((o) => o.type === 'mail')
   @IsEmail({}, { message: 'Email address must be a valid email.' })
-  mailAddress?: string;
+  mailAddress: string;
 
   @ApiProperty()
   @IsNotEmpty()
@@ -31,6 +31,4 @@ export class ClientDto {
   @ApiProperty({ type: [AttachmentDto], isArray: true, default: [] })
   @Type(() => AttachmentDto)
   attachments?: AttachmentDto[] = []
-  @ApiProperty()
-  otp?: string; 
 }

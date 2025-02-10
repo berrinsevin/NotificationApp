@@ -1,52 +1,69 @@
-import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
+import { JwtService } from '@nestjs/jwt';
+import { OtpService } from './otp.service';
+import { Injectable } from '@nestjs/common';
+import { UserService } from 'src/user/user.service';
+import { User } from 'src/user/schemas/user.schema';
 import { LoggerService } from 'src/logger/logger.service';
 import { TwilioService } from 'src/notification/twilio.service';
-import { OtpService } from 'src/redis/otp.service';
-import { LoginUserDto } from 'src/user/dto/user-dto';
-import { User } from 'src/user/schemas/user.schema';
-import { UserService } from 'src/user/user.service';
+import { Login2faDto, LoginUserDto } from 'src/user/dto/user-dto';
 
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly logger: LoggerService,
+    private readonly otpService: OtpService,
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
-    private readonly otpService: OtpService,
     private readonly twilioService: TwilioService,
-    private readonly logger: LoggerService,
-  ) {}
+  ) { }
 
-  async validateUser(usetDto: LoginUserDto): Promise<User | null> {
-    const user = await this.userService.findUser(usetDto.username);
+  async handleUserLogin(userDto: LoginUserDto): Promise<any> {
+    const user = await this.userService.findUserByMail(userDto.email);
 
-    if (user && await bcrypt.compare(usetDto.password, user.password)) {
-      this.logger.log(`User validated: ${usetDto.username}`);
-      return user;
-    }
-    
-    this.logger.warn(`User validation failed: ${usetDto.username}`);
-    return null;
-  }
+    if (user && await bcrypt.compare(userDto.password, user.password)) {
+      this.logger.log(`User validated: ${userDto.email}`);
 
-  async generateJwt(user: User): Promise<string> {
-    const payload = { username: user.username, sub: user.id };
+      const token = uuidv4();
+      const otp = await this.otpService.generateOtp(token, user);
 
-    return this.jwtService.sign(payload);
-  }
+      if (process.env.IS_EMAIL_ACTIVE === 'true') {
+        await this.twilioService.sendNotification({ phoneNumber: user.phoneNumber, mailAddress: user.email, message: `Your OTP code is ${otp}`, type: 'mail' });
+      }
 
-  async handleUserAuthentication(user: User | null, otpPhoneNumber: string): Promise<{ message: string, status: string }> {
-    if (user || user !== null) {
-      const token = await this.generateJwt(user);
-      const otp = await this.otpService.generateOtp(otpPhoneNumber);
-      await this.twilioService.sendNotification({ phoneNumber: otpPhoneNumber, message: `Your OTP code is ${otp}`, type: 'sms' });
+      if (process.env.IS_SMS_ACTIVE === 'true') {
+        await this.twilioService.sendNotification({ phoneNumber: user.phoneNumber, mailAddress: user.email, message: `Your OTP code is ${otp}`, type: 'sms' });
+      }
 
-      this.logger.log(`User authenticated: ${user.username}`);
       return { message: `Token: ${token}`, status: 'success' };
     }
 
-    this.logger.warn('User authentication failed');
-    return { message: 'Invalid username or password', status: 'error' };
+    const message = `User coult not be found with the given email address: ${userDto.email}`;
+    this.logger.warn(message);
+    return { message: message, status: 'success' };
+  }
+
+  async handleUserLogin2fa(loginDto: Login2faDto): Promise<any> {
+    const data = await this.otpService.validateOtp(loginDto.token);
+
+    if (data) {
+      const { otp, user } = JSON.parse(data);
+
+      if (loginDto.otp === otp) {
+        const token = await this.generateJwt(user);
+
+        this.logger.log(`User logged in: ${user.email}`);
+        return { message: `Token: ${token}`, status: 'success' };
+      }
+    }
+
+    return { message: `Token is not valid`, status: 'error' };
+  }
+
+  async generateJwt(user: User): Promise<string> {
+    const payload = { username: user.username, userMail: user.email, sub: user._id };
+
+    return this.jwtService.sign(payload);
   }
 }

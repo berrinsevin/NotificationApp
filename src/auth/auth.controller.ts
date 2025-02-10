@@ -1,7 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { LoginUserDto } from 'src/user/dto/user-dto';
+import { Login2faDto, LoginUserDto } from 'src/user/dto/user-dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -13,8 +13,12 @@ export class AuthController {
   @ApiOperation({ summary: 'User Login' })
   @Post('login') 
   async login(@Body() loginUserDto: LoginUserDto) {
-    const user = await this.authService.validateUser(loginUserDto);
+    return this.authService.handleUserLogin(loginUserDto);
+  }
 
-    return this.authService.handleUserAuthentication(user, loginUserDto.phoneNumber);
+  @ApiOperation({ summary: 'User Login' })
+  @Post('login2fa') 
+  async login2fa(@Body() loginUserDto: Login2faDto) {
+    return this.authService.handleUserLogin2fa(loginUserDto);
   }
 }

@@ -7,9 +7,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategy/jwt.strategy';
 import { AuthController } from './auth.controller';
 import { LoggerService } from 'src/logger/logger.service';
-import { OtpService } from 'src/redis/otp.service';
 import { TwilioService } from 'src/notification/twilio.service';
-import { RedisService } from 'src/redis/redis.service';
+import { OtpService } from './otp.service';
+import { CacheModule } from '@nestjs/cache-manager';
+import { BasicAuthentication } from './guards/basic.authentication';
 
 @Module({
   imports: [
@@ -18,14 +19,15 @@ import { RedisService } from 'src/redis/redis.service';
       imports: [ConfigModule],
       useFactory: async (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET_KEY'),
-        signOptions: { expiresIn: '60m' }
+        signOptions: { expiresIn: '24h' }
       }),
       inject: [ConfigService],
     }),
+    CacheModule.register(),
     forwardRef(() => UserModule)
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TwilioService, LoggerService, OtpService, RedisService],
+  providers: [AuthService, JwtStrategy, TwilioService, LoggerService, OtpService, BasicAuthentication],
   exports: [AuthService],
 })
 export class AuthModule {}
