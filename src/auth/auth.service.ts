@@ -46,10 +46,9 @@ export class AuthService {
 
   async handleUserLogin2fa(loginDto: Login2faDto): Promise<any> {
     const data = await this.otpService.validateOtp(loginDto.token);
-
     if (data) {
       const { otp, user } = JSON.parse(data);
-
+      
       if (loginDto.otp === otp) {
         const token = await this.generateJwt(user);
 

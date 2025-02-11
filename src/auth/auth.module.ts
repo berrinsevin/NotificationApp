@@ -1,15 +1,15 @@
-import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
+import { OtpService } from './otp.service';
 import { AuthService } from './auth.service';
 import { UserModule } from 'src/user/user.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtStrategy } from './strategy/jwt.strategy';
+import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
+import { Module, forwardRef } from '@nestjs/common';
+import { CacheModule } from 'src/cache/cache.module';
+import { JwtStrategy } from './strategy/jwt.strategy';
 import { LoggerService } from 'src/logger/logger.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TwilioService } from 'src/notification/twilio.service';
-import { OtpService } from './otp.service';
-import { CacheModule } from '@nestjs/cache-manager';
 import { BasicAuthentication } from './guards/basic.authentication';
 
 @Module({
@@ -23,8 +23,8 @@ import { BasicAuthentication } from './guards/basic.authentication';
       }),
       inject: [ConfigService],
     }),
-    CacheModule.register(),
-    forwardRef(() => UserModule)
+    forwardRef(() => UserModule),
+    CacheModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, TwilioService, LoggerService, OtpService, BasicAuthentication],

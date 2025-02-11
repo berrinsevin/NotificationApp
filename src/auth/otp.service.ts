@@ -1,17 +1,16 @@
-import { Cache } from 'cache-manager';
+import { Cacheable } from 'cacheable';
 import { Inject, Injectable } from '@nestjs/common';
 import { User } from 'src/user/schemas/user.schema';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class OtpService {
   constructor(
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject('CACHE_INSTANCE') private cacheManager: Cacheable,
   ) { }
 
   async generateOtp(token: string, user: User): Promise<string> {
     const otp = this.generateNumericOtp();
-    await this.cacheManager.set(`otp:${token}`, JSON.stringify({ otp, user }), 3600);
+    await this.cacheManager.set(`otp:${token}`, { otp, user }, '1h');
     return otp;
   }
   
@@ -19,8 +18,7 @@ export class OtpService {
     const data = await this.cacheManager.get(`otp:${token}`);
 
     if (data) {
-        const parsedData = JSON.parse(data as string);
-        return parsedData;
+      return data;
     }
 
     return null;

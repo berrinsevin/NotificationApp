@@ -51,7 +51,6 @@ export class TwilioService {
 
   private async sendEmail(clientDto: ClientDto): Promise<any> {
     const from = process.env.SENDGRID_FROM_EMAIL;
-    console.log(clientDto);
 
     if (!from) {
       throw new Error('SendGrid sender email (SENDGRID_FROM_EMAIL) is not configured');
@@ -79,7 +78,7 @@ export class TwilioService {
         text: clientDto.message,
         attachments: validAttachments,
       });
-      console.log(response);
+      
       return response;
 
     } catch (error) {
